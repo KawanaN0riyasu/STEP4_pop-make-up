@@ -67,7 +67,7 @@ class TransactionStatement(Base):
 
     TRD_ID = Column(Integer, primary_key=True, index=True)
     DTL_ID = Column(Integer, primary_key=True, index=True)
-    PRD_ID = Column(Integer, ForeignKey("products.PRD_ID"))
+    PRD_ID = Column(Integer, index=True)
     PRD_NAME = Column(String(50), index=True)
     PRD_PRICE = Column(Integer, index=True)
     TAC_CD = Column(String(2), index=True)
