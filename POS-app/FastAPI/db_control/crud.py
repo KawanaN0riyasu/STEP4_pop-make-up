@@ -30,3 +30,6 @@ def create_user_item(db: Session, item: schemas.ItemCreate, user_id: int):
 
 def get_products(db: Session, skip: int = 0, limit: int = 100):
     return db.query(models.Product).offset(skip).limit(limit).all()
+
+def get_product_by_code(db: Session, code: str):
+    return db.query(models.Product).filter(models.Product.PRD_CODE == code).first()

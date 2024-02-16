@@ -56,7 +56,7 @@ drink = {
 @app.post("/search_product/")
 def search_product(product_query: ProductQuery = Body(...)):
     print(f"Received code: {product_query.code}")
-    if product_query.code == drink["PRD_ID"]:
+    if product_query.code == drink["PRD_CD"]:
         return {
             "status": "success",
             "message": drink
@@ -70,3 +70,15 @@ def search_product(product_query: ProductQuery = Body(...)):
 async def read_products(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     products = crud.get_products(db, skip=skip, limit=limit)
     return products
+
+@app.post("/ProductVerification/")
+def search_product(product_query: ProductQuery = Body(...), db: Session = Depends(get_db)):
+    print(f"Received code: {product_query.code}")
+    product = crud.get_product_by_code(db, product_query.code)
+    if product:
+        return {
+            "status": "success",
+            "message": product
+        }
+    else:
+        return {"status": "failed", "message": None}

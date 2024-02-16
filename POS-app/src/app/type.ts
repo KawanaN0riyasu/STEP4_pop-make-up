@@ -4,7 +4,9 @@ export type IDtype = {
 
  export type Producttype = {
     PRD_ID: number;
-    PRD_CD: string;
-    PRD_NAME: string;
-    PRD_PRICE: number;
+    PRD_CODE: string;
+    FROM_DATE: string;
+    TO_DATE: string;
+    NAME: string;
+    PRICE: number;
   };
