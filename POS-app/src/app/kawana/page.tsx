@@ -1,14 +1,9 @@
 'use client'
-import { useState,useEffect } from 'react';
+import React, { useState } from 'react';
 import TitleBar from '../components/TitleBar';
 import InputArea from '../components/InputArea_kawana';
 import ProductVerification from '../components/ProductVerification_kawana';
 import { IDtype } from '../type';
-
-// 型定義
-// type ProductType = {
-//   PRD_ID: string;
-// };
 
 export default function Home() {
   const [productid, setProductid] = useState< IDtype | null >(null);  //型が IDtype か null で、初期値がnull。
@@ -22,14 +17,18 @@ export default function Home() {
   };
   // newProductId を受け取って新しい IDtype オブジェクト「newProduct」 を作成、setProductid を使って productid を更新する。
 
+  const resetInput = () => {
+    setProductid(null); // InputAreaの入力をリセットする
+  };
+
   return (
     <>
     <TitleBar/>
     <div className="flex justify-center items-center my-10">
       <h1 className="text-4xl font-bold">{message}</h1>
     </div>
-    <InputArea onProductChange={handleProductChange}/>
-    <ProductVerification productid={productid}/>
+    <InputArea onProductChange={handleProductChange} productid={productid} resetInput={resetInput} />
+    <ProductVerification productid={productid}　resetInput={resetInput} /> {/* resetInput関数をProductVerificationに渡す */}
     </>
   );
 }

@@ -11,7 +11,7 @@ type Response = {
     message?: Producttype;
 };
 
-const ProductVerification: React.FC<ProductVerificationProps> = ({ productid }) => {
+const ProductVerification: React.FC<ProductVerificationProps> = ({ productid, resetInput }) => {
 
     const [product, setProduct] = useState<Producttype | null>(null); // 製品情報を保持するステート
     const [error, setError] = useState<Error | null>(null); // エラーを保持するステート
@@ -56,6 +56,10 @@ const ProductVerification: React.FC<ProductVerificationProps> = ({ productid }) 
         // productがnullでない場合にのみ、listに追加する
         if (product) {
             setList(list => [...list, product]);
+            // productをリセットする
+            setProduct(null);
+            // InputAreaの入力をリセットする
+            resetInput(); // resetInput関数を呼び出す
         }
     };
 
