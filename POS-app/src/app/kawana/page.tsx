@@ -1,8 +1,8 @@
 'use client'
 import { useState,useEffect } from 'react';
 import TitleBar from '../components/TitleBar';
-import InputArea_kawana from '../components/InputArea_kawana';
-import ProductVerification_kawana from '../components/ProductVerification_kawana';
+import InputArea from '../components/InputArea_kawana';
+import ProductVerification from '../components/ProductVerification_kawana';
 import { IDtype } from '../type';
 
 // 型定義
@@ -28,8 +28,8 @@ export default function Home() {
     <div className="flex justify-center items-center my-10">
       <h1 className="text-4xl font-bold">{message}</h1>
     </div>
-    <InputArea_kawana onProductChange={handleProductChange}/>
-    <ProductVerification_kawana productid={productid}/>
+    <InputArea onProductChange={handleProductChange}/>
+    <ProductVerification productid={productid}/>
     </>
   );
 }

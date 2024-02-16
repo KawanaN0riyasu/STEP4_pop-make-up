@@ -2,7 +2,7 @@ export type IDtype = {
     PRD_ID: string;
   };
 
- export type Producttype = {
+export type Producttype = {
     PRD_ID: number;
     PRD_CODE: string;
     FROM_DATE: string;

@@ -4,7 +4,7 @@ interface InputAreaProps {
     onProductChange: (value: string) => void;
 }
 
-const InputArea_kawana: React.FC<InputAreaProps>  = ({ onProductChange }) => {
+const InputArea: React.FC<InputAreaProps>  = ({ onProductChange }) => {
   // フォーム送信の処理をここに記述することもできます
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault(); // フォームのデフォルト送信動作を防ぎます
@@ -35,4 +35,4 @@ const InputArea_kawana: React.FC<InputAreaProps>  = ({ onProductChange }) => {
   );
 }
 
-export default InputArea_kawana;
+export default InputArea;

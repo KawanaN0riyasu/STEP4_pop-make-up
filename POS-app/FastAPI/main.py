@@ -45,32 +45,6 @@ class ProductQuery(BaseModel):
 def read_root():
     return {"Hello": "World"}
 
-drink = {
-    "PRD_ID":"001",
-    "PRD_CD": "4902220772414",
-    "PRD_NAME": "クリアアサヒ",
-    "PRD_PRICE": "178"
-    }
-
-# test用
-@app.post("/search_product/")
-def search_product(product_query: ProductQuery = Body(...)):
-    print(f"Received code: {product_query.code}")
-    if product_query.code == drink["PRD_CD"]:
-        return {
-            "status": "success",
-            "message": drink
-            }
-    else:
-        return{
-            "status": "failed"
-        }
-
-@app.get("/get_products", response_model=list[schemas.Product])
-async def read_products(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    products = crud.get_products(db, skip=skip, limit=limit)
-    return products
-
 @app.post("/ProductVerification/")
 def search_product(product_query: ProductQuery = Body(...), db: Session = Depends(get_db)):
     print(f"Received code: {product_query.code}")
