@@ -41,12 +41,20 @@ load_dotenv()
 class ProductQuery(BaseModel):
     code: str
 
+class TransactionData(BaseModel):
+    DATETIME: datetime
+    EMP_CD: str
+    STORE_CD: str
+    POS_NO: str
+    TOTAL_AMT: int
+    TOTAL_AMT_EX_TAX: int
+
 @app.get("/")
 def read_root():
     return {"Hello": "World"}
 
 @app.post("/ProductVerification/")
-def search_product(product_query: ProductQuery = Body(...), db: Session = Depends(get_db)):
+async def search_product(product_query: ProductQuery = Body(...), db: Session = Depends(get_db)):
     print(f"Received code: {product_query.code}")
     product = crud.get_product_by_code(db, product_query.code)
     if product:
@@ -56,3 +64,8 @@ def search_product(product_query: ProductQuery = Body(...), db: Session = Depend
         }
     else:
         return {"status": "failed", "message": None}
+
+@app.post("/transactionData/")
+async def create_restaurant(postTransactionData: TransactionData = Body(...)):
+    print(f"Received transactionData: {postTransactionData}")
+    return {"Hello": "World"}
