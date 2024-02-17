@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import TitleBar from '../components/TitleBar';
 import InputArea from '../components/InputArea_kawana';
-import ProductVerification from '../components/ProductVerification_kawana';
+import AddCart from '../components/AddCart_kawana';
 import { IDtype } from '../type';
 
 export default function Home() {
@@ -28,7 +28,7 @@ export default function Home() {
       <h1 className="text-4xl font-bold">{message}</h1>
     </div>
     <InputArea onProductChange={handleProductChange} productid={productid} resetInput={resetInput} />
-    <ProductVerification productid={productid}　resetInput={resetInput} /> {/* resetInput関数をProductVerificationに渡す */}
+    <AddCart productid={productid} resetInput={resetInput} /> {/* resetInput関数をProductVerificationに渡す */}
     </>
   );
 }
