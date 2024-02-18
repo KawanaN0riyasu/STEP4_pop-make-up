@@ -66,6 +66,19 @@ async def search_product(product_query: ProductQuery = Body(...), db: Session = 
         return {"status": "failed", "message": None}
 
 @app.post("/transactionData/")
-async def create_restaurant(postTransactionData: TransactionData = Body(...)):
+async def create_transactionData(postTransactionData: TransactionData = Body(...), db: Session = Depends(get_db)):
     print(f"Received transactionData: {postTransactionData}")
-    return {"Hello": "World"}
+    trd = models.Transaction(
+        DATETIME = postTransactionData.DATETIME, 
+        EMP_CD = postTransactionData.EMP_CD, 
+        STORE_CD = postTransactionData.STORE_CD, 
+        POS_NO = postTransactionData.POS_NO, 
+        TOTAL_AMT = postTransactionData.TOTAL_AMT,
+        TOTAL_AMT_EX_TAX = postTransactionData.TOTAL_AMT_EX_TAX,
+    )
+    db.add(trd)
+    db.commit()
+    # 自動採番されたTRD_IDを取得
+    trd_id = trd.TRD_ID
+    # TRD_IDをレスポンスに含める
+    return {"Received transactionData": postTransactionData,  "TRD_ID": trd_id }

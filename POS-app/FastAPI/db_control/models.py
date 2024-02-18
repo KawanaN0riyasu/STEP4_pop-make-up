@@ -78,7 +78,7 @@ class TransactionStatement(Base):
 class Transaction(Base):
     __tablename__ = "transactions"
 
-    TRD_ID = Column(Integer, primary_key=True, index=True)
+    TRD_ID = Column(Integer, primary_key=True, index=True, autoincrement=True, unique=True)
     DATETIME = Column(DateTime, index=True)
     EMP_CD = Column(String(10), index=True)
     STORE_CD = Column(String(5), index=True)

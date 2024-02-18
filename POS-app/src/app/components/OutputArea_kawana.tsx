@@ -50,6 +50,7 @@ const OutputArea: React.FC<OutputProps> = ({ productid, resetInput }) => {
         }
     };
 
+    // 合計金額の計算処理
     const calculateTotalPrice = () => {
         return Math.round(list.reduce((acc, cur) => acc + cur.PRICE, 0) * 1.08);
     };
@@ -85,13 +86,15 @@ const OutputArea: React.FC<OutputProps> = ({ productid, resetInput }) => {
         }
     };
 
+    // ポップアップ閉じるボタンを押したときの処理
     const handlePopupClose = () => {
-        setShowPopup(false); // ポップアップを閉じる
+        setShowPopup(false); 
         setProduct(null);
         resetInput();
-        setList([]); // リストをリセット
+        setList([]);
     };
 
+    // 購入リストの表示内容
     const renderProductList = () => {
         return list.length > 0 ? (
             Object.entries(list.reduce((acc, cur) => {
@@ -112,6 +115,7 @@ const OutputArea: React.FC<OutputProps> = ({ productid, resetInput }) => {
         );
     };
 
+    // ポップアップウィンドウの表示内容
     const popupJSX = showPopup && (
         <div className="fixed top-0 left-0 w-full h-full flex justify-center items-center bg-black bg-opacity-50">
             <div className="bg-white rounded p-5 shadow-lg text-center">
