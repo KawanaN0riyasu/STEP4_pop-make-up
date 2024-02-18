@@ -2,28 +2,28 @@ import React, { useState, useEffect } from 'react';
 import { IDtype } from '../type';
 
 interface InputAreaProps {
-  onProductChange: (value: string) => void;
+  onProductChange: (value: string) => void; 
   productid: IDtype | null;
-  resetInput: () => void; // resetInput関数を受け取る
+  resetInput: () => void; 
 }
 
+// 入力エリアのコンポーネント
 const InputArea: React.FC<InputAreaProps>  = ({ onProductChange, productid, resetInput }) => {
-  const [inputValue, setInputValue] = useState(""); 
+  const [inputValue, setInputValue] = useState("");  // 入力値を管理するステート
 
+  // productid変更時の処理
   useEffect(() => {
-    // resetInput関数が呼ばれたときにinputValueをリセットする
     if (productid === null && inputValue !== "") {
-      setInputValue(""); // productidがnullのときのみリセット
+      setInputValue(""); 
     }
-  }, [productid]); // resetInput関数が呼ばれた時もリセット
+  }, [productid]);  // productidが変更されたときに実行
 
-  // フォーム送信の処理をここに記述することもできます
+  // フォーム送信時の処理
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault(); // フォームのデフォルト送信動作を防ぎます
-    // 入力されたPRO_IDを取得するために、event.currentTargetを使用します
-    const proId = (event.currentTarget.elements.namedItem('pro_id')as HTMLInputElement).value;
-    onProductChange(proId);
-    console.log('Sending PRO_ID:', proId); // 実際の送信処理に置き換えてください
+    event.preventDefault(); // フォームのデフォルト送信動作を防ぐ
+    const proId = (event.currentTarget.elements.namedItem('pro_id')as HTMLInputElement).value; // 入力された商品コードを取得
+    onProductChange(proId); // 親コンポーネントに商品コードを伝える
+    console.log('Sending PRO_ID:', proId); 
   };
 
   return (
