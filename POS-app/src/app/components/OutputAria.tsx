@@ -52,9 +52,9 @@ const OutputAria: React.FC<OutputAriaProps> = ({ productid }) => {
                 {data?.message && (
                     <>
                         <div>PRO_ID：{data.message.PRD_ID}</div>
-                        <div>PRD_CD：{data.message.PRD_CODE}</div>
-                        <div>PRD_NAME：{data.message.NAME}</div>
-                        <div>PRD_PRICE：{data.message.PRICE}</div>
+                        <div>PRD_CD：{data.message.PRD_CD}</div>
+                        <div>PRD_NAME：{data.message.PRD_NAME}</div>
+                        <div>PRD_PRICE：{data.message.PRD_PRICE}</div>
                     </>
                 )}
             </div>

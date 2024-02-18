@@ -3,17 +3,17 @@ import { IDtype, Producttype } from '../type';
 import ProductInfo from './ProductInfo_kawana';
 import ErrorMessage from './ErrorMessage_kawana';
 
-type OutputProps = {
+type OutputAriaProps = {
     productid: IDtype | null;
     resetInput: () => void; 
 };
 
-const OutputArea: React.FC<OutputProps> = ({ productid, resetInput }) => {
+const OutputAria: React.FC<OutputAriaProps> = ({ productid, resetInput }) => {
     const [product, setProduct] = useState<Producttype | null>(null);
     const [error, setError] = useState<Error | null>(null);
     const [list, setList] = useState<Producttype[]>([]);
     const [showPopup, setShowPopup] = useState(false);
-
+    
     // データ取得の非同期関数
     useEffect(() => {
         if (productid) {
@@ -33,7 +33,7 @@ const OutputArea: React.FC<OutputProps> = ({ productid, resetInput }) => {
                 const result = await response.json(); 
                 setProduct(result.message);
                 setError(null);
-            } catch (error) {
+            } catch (error: any) {
                 console.error('Fetching data failed', error);
                 setProduct(null);
                 setError(error);
@@ -66,7 +66,6 @@ const OutputArea: React.FC<OutputProps> = ({ productid, resetInput }) => {
             TOTAL_AMT: totalPrice,
             TOTAL_AMT_EX_TAX: Math.round(totalPrice / 1.1),
         };
-        console.log('transactionData:', transactionData); 
 
         try {
             const postTransactionData = await fetch("http://localhost:8000/transactionData/", {
@@ -77,6 +76,28 @@ const OutputArea: React.FC<OutputProps> = ({ productid, resetInput }) => {
 
             if (!postTransactionData.ok) {
                 throw new Error(`Transaction APIエラー: ${ postTransactionData.status}`);
+            }
+
+            const result = await postTransactionData.json(); // postTransactionDataの結果を受け取る
+            const trd_id = result.TRD_ID;  // TRD_IDを取り出す
+            console.log('TRD_ID:', trd_id); // TRD_IDを使って何か処理をする
+
+            //  購入リストのデータを取引明細に追加する
+            const transactionStatement = list.map(item => ({
+                TRD_ID: trd_id,
+                PRD_NAME: item.NAME,
+                PRD_PRICE: item.PRICE,
+                TAC_CD: "01",
+            }));
+            console.log('TransactionStatementData:', transactionStatement);
+            const postTransactionStatementData = await fetch("http://localhost:8000/transactionStatementData/", {
+                method: 'POST',
+                headers:{"Content-Type": "application/json" },
+                body: JSON.stringify(transactionStatement),
+            });
+
+            if (!postTransactionStatementData.ok) {
+                throw new Error(`TransactionStatement APIエラー: ${ postTransactionStatementData.status}`);
             }
 
             setShowPopup(true); // ポップアップを表示
@@ -96,13 +117,14 @@ const OutputArea: React.FC<OutputProps> = ({ productid, resetInput }) => {
 
     // 購入リストの表示内容
     const renderProductList = () => {
+        const acc: { [key: string]: { count: number, total: number } } = {};
         return list.length > 0 ? (
             Object.entries(list.reduce((acc, cur) => {
                 acc[cur.NAME] = acc[cur.NAME] || { count: 0, total: 0 };
                 acc[cur.NAME].count += 1;
                 acc[cur.NAME].total += cur.PRICE;
                 return acc;
-            }, {})).map(([name, { count, total }], index) => (
+            }, acc)).map(([name, { count, total }], index) => (
                 <div key={index}>
                     <span>{name}　</span>
                     <span>x{count}　</span>
@@ -167,4 +189,4 @@ const OutputArea: React.FC<OutputProps> = ({ productid, resetInput }) => {
     );
 }
 
-export default OutputArea;
+export default OutputAria;

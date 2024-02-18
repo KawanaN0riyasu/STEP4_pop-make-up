@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { IDtype } from '../type';
 
-interface InputAreaProps {
+interface InputAriaProps {
   onProductChange: (value: string) => void; 
   productid: IDtype | null;
   resetInput: () => void; 
 }
 
 // 入力エリアのコンポーネント
-const InputArea: React.FC<InputAreaProps>  = ({ onProductChange, productid, resetInput }) => {
+const InputAria: React.FC<InputAriaProps>  = ({ onProductChange, productid, resetInput }) => {
   const [inputValue, setInputValue] = useState("");  // 入力値を管理するステート
 
   // productid変更時の処理
@@ -49,4 +49,4 @@ const InputArea: React.FC<InputAreaProps>  = ({ onProductChange, productid, rese
   );
 }
 
-export default InputArea;
+export default InputAria;

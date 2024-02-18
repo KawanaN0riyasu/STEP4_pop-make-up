@@ -10,3 +10,12 @@ export type Producttype = {
     NAME: string;
     PRICE: number;
   };
+
+  export type TransactionStatementData = {
+    TRD_ID: number;
+    DTL_ID: number;
+    PRD_ID: number;
+    PRD_NAME: string;
+    PRD_PRICE: number;
+    TAC_CD: string;
+  };

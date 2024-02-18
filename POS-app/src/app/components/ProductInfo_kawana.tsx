@@ -1,9 +1,9 @@
 import React from 'react';
-import { Producttype } from '../type';
+import { IDtype, Producttype } from '../type';
 
 type ProductInfoProps = {
     product: Producttype | null;
-    productid: string | null;
+    productid: IDtype | null;
 };
 
 const ProductInfo: React.FC<ProductInfoProps> = ({ product, productid }) => {

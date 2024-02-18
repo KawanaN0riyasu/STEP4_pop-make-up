@@ -42,6 +42,7 @@ class Product(Base):
     PRICE = Column(Integer, index=True)
 
     PRM = relationship("PromotionalPlan", back_populates="PRD")
+    TRST = relationship("TransactionStatement", back_populates="PRD2")
 
 
 # 販促企画モデルの定義
@@ -64,14 +65,15 @@ class PromotionalPlan(Base):
 class TransactionStatement(Base):
     __tablename__ = "transactionStatements"
 
-    TRD_ID = Column(Integer, ForeignKey('transactions.TRD_ID'), primary_key=True, index=True)
-    DTL_ID = Column(Integer, primary_key=True, index=True)
-    PRD_ID = Column(Integer, index=True)
+    TRD_ID = Column(Integer, ForeignKey('transactions.TRD_ID'), index=True)
+    DTL_ID = Column(Integer, primary_key=True, index=True, autoincrement=True, unique=True)
+    PRD_ID = Column(Integer, ForeignKey('products.PRD_ID'), index=True)
     PRD_NAME = Column(String(50), index=True)
     PRD_PRICE = Column(Integer, index=True)
     TAC_CD = Column(String(2), index=True)
 
     TRD = relationship("Transaction", back_populates="TRST2")
+    PRD2 = relationship("Product", back_populates="TRST")
 
 
 # 取引モデルの定義
