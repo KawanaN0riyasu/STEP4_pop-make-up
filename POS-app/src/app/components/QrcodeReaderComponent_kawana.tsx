@@ -19,7 +19,17 @@ const InputArea: React.FC<InputAreaProps>  = ({ onProductChange, productid, rese
         if (productid === null && inputValue !== "") {
             setInputValue(""); 
         }
+        if (productid !== null){
+            updateInputValue();
+        }
     }, [productid]);  // productidが変更されたときに実行
+
+    // inputValueを更新する処理
+    const updateInputValue = () => {
+        if (productid !== null && productid.PRD_ID !== inputValue) {
+            setInputValue(productid.PRD_ID);
+        }
+    };
 
     // フォーム送信時の処理
     const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
@@ -28,27 +38,6 @@ const InputArea: React.FC<InputAreaProps>  = ({ onProductChange, productid, rese
         onProductChange(proId); // 親コンポーネントに商品コードを伝える
         console.log('Sending PRO_ID:', proId); 
     };
-
-    // QRコードを読み取った時の実行する関数
-    //const onNewScanResult = (result: any) => {
-    //    console.log('QRコードスキャン結果');
-    //    console.log(result);
-    //    setScannedTime(new Date());
-    //    setInputValue(result); 
-
-    //    const event: SyntheticEvent<HTMLFormElement> = {  // SyntheticEvent<HTMLFormElement>型のオブジェクトを作成
-    //        ...new Event('submit'), // Event型のオブジェクトを展開
-    //        currentTarget: (document.getElementById("pro_id") as HTMLInputElement)?.form as HTMLFormElement, // currentTargetプロパティにフォームの要素を設定
-    //        target: (document.getElementById("pro_id") as HTMLInputElement)?.form as HTMLFormElement, // targetプロパティにフォームの要素を設定
-    //        nativeEvent: new Event('submit'), // nativeEventプロパティにEvent型のオブジェクトを設定
-    //        preventDefault: () => {}, 
-    //        stopPropagation: () => {}, 
-    //        isDefaultPrevented: () => false, 
-    //        isPropagationStopped: () => false, 
-    //        persist: () => {}, 
-    //    };
-    //    handleSubmit(event); // フォーム送信処理を呼び出す
-    //};
 
     return (
         <div className="px-5 py-5 mx-auto max-w-md">
@@ -75,16 +64,10 @@ const InputArea: React.FC<InputAreaProps>  = ({ onProductChange, productid, rese
                     id="pro_id"
                     name="pro_id"
                     className="w-full p-2 border border-gray-300 rounded text-center"
-                    placeholder="商品コードを入力してください"
+                    placeholder="商品コード"
                     value={inputValue}
                     onChange={(e) => setInputValue(e.target.value)}
                 />
-                <button
-                    type="submit"
-                    className="px-5 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none focus:ring"
-                >
-                    商品コード読み取り
-                </button>
             </form>
         </div>
     );

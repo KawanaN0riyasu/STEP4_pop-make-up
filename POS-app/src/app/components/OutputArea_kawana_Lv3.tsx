@@ -1,18 +1,21 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { IDtype, Producttype } from '../type';
-import ProductInfo from './ProductInfo_kawana';
 import ErrorMessage from './ErrorMessage_kawana';
 
 type OutputAreaProps = {
     productid: IDtype | null;
     resetInput: () => void; 
+    setProductid: (productId: IDtype | null) => void;
 };
 
-const OutputArea: React.FC<OutputAreaProps> = ({ productid, resetInput }) => {
+const OutputArea: React.FC<OutputAreaProps> = ({ productid, resetInput, setProductid }) => {
     const [product, setProduct] = useState<Producttype | null>(null);
     const [error, setError] = useState<Error | null>(null);
     const [list, setList] = useState<Producttype[]>([]);
     const [showPopup, setShowPopup] = useState(false);
+    const [clickedProduct, setClickedProduct] = useState<Producttype | null>(null);
+    const [newQuantity, setNewQuantity] = useState<number>(1); // 数量入力フィールドの値を保持
+    const clickedIndexRef = useRef<number | null>(null); // クリックされたインデックスを記録
     
     // データ取得の非同期関数
     useEffect(() => {
@@ -41,21 +44,29 @@ const OutputArea: React.FC<OutputAreaProps> = ({ productid, resetInput }) => {
         }
     }, [productid]);  // productid が変更されるたびに fetchData を実行
 
-    // productステートが変更されたときにhandleAddを呼び出す
-    useEffect(() => {
-        if (product) {
-            handleAdd();
-        }
-    }, [product]); // productが依存配列に追加される
+    // ↑ボタンがクリックされたときにインデックスを記録する関数
+    const setClickedIndex = (index: number) => {
+        return new Promise<void>((resolve) => {
+            clickedIndexRef.current = index;
+            resolve();
+        });
+    };
 
     // 追加ボタンを押したときの処理
     const handleAdd = () => { 
-        if (product) {
+        if (product && product.NAME) {
             setList([...list, product]); //productをlistに追加
             setProduct(null);
             resetInput();
         }
     };
+
+    // productステートが変更されたときにhandleAddを呼び出す
+    useEffect(() => {
+        if (product && clickedIndexRef.current === null) { // クリックされた場合はhandleAddを呼び出さない
+            handleAdd();
+        }
+    }, [product]); // productが依存配列に追加される
 
     // 合計金額の計算処理
     const calculateTotalPrice = () => {
@@ -122,26 +133,84 @@ const OutputArea: React.FC<OutputAreaProps> = ({ productid, resetInput }) => {
         setList([]);
     };
 
+    // リスト削除ボタンを押したときの処理
+    const handleDeleteList = () => {
+        if (clickedProduct) {
+            const updatedList = list.filter(item => item.NAME !== clickedProduct.NAME);
+            setList(updatedList);
+            setClickedProduct(null); // clickedProductをリセット
+        }
+    };
+
+    // 数量変更ボタンを押したときの処理
+    const handleQuantityChange = () => {
+        if (clickedProduct) {
+            const existingProductIndex = list.findIndex(item => item.NAME === clickedProduct.NAME);
+            const updatedList = [...list]; // listのコピーを作成
+            if (updatedList.length > newQuantity) {
+                updatedList.splice(newQuantity); // 新しい数量よりも多い場合は、余分な製品を削除
+            } else {
+                while (updatedList.filter(item => item.NAME === clickedProduct.NAME).length < newQuantity) {
+                    updatedList.push({ ...clickedProduct }); // 新しい数量に足りない分だけclickedProductを追加
+                }
+            }
+            setList(updatedList); // 更新されたリストを設定
+        }
+    };
+
+    // 数量入力フィールドの変更ハンドラ
+    const handleQuantityInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = parseInt(e.target.value);
+        if (!isNaN(value) && value >= 1 && value <= 99) {
+            setNewQuantity(value);
+        }
+    };
+
     // 購入リストの表示内容
     const renderProductList = () => {
-        const acc: { [key: string]: { count: number, total: number } } = {};
-        return list.length > 0 ? (
-            Object.entries(list.reduce((acc, cur) => {
-                acc[cur.NAME] = acc[cur.NAME] || { count: 0, total: 0 };
-                acc[cur.NAME].count += 1;
-                acc[cur.NAME].total += cur.PRICE;
-                return acc;
-            }, acc)).map(([name, { count, total }], index) => (
-                <div key={index}>
-                    <span>{name}　</span>
-                    <span>x{count}　</span>
-                    <span>{total / count}円　</span>
-                    <span>{total}円　</span>
+        const counts: { [key: string]: number } = {};
+        list.forEach(item => {
+            counts[item.NAME] = (counts[item.NAME] || 0) + 1;
+        });
+
+        return Object.entries(counts).map(([name, count], index) => {
+            const total = list.filter(item => item.NAME === name).reduce((acc, cur) => acc + cur.PRICE, 0);
+
+            // ↑ボタンをクリックしたときの処理
+            const handleClick = async (name: string) => {
+                const clickedProduct = list.find(item => item.NAME === name); // list[index] で商品情報を取得
+                if (clickedProduct) {
+                    const convertedProduct: IDtype = {
+                        PRD_ID: clickedProduct.PRD_CODE // PRD_CODE を IDtype に割り当てる
+                    };
+                    const index = list.findIndex(item => item.NAME === name);
+                    await setClickedIndex(index); // クリックされたインデックスを記録
+                    console.log('Productid:', convertedProduct);
+                    setProductid(convertedProduct); // setProductidを非同期的に実行 
+                    setTimeout(() => {
+                        clickedIndexRef.current = null;
+                    }, 500); // 500ミリ秒後に実行
+                    setClickedProduct(clickedProduct); // clickedProductを設定
+                }
+            };
+
+            return (
+                <div className="flex justify-between items-center">
+                    <div key={index} >
+                        <span>{name}, </span>
+                        <span>{total / count}円  </span>
+                        <span>x{count}  </span>
+                        <span>=  {total}円 </span>
+                    </div>
+                    <button 
+                        className="bg-blue-500 text-white rounded hover:bg-blue-600 px-2 py-1 focus:outline-none focus:ring h-5 flex items-center justify-center"
+                        onClick={() =>  handleClick(name)}
+                    >
+                        ↑
+                    </button>
                 </div>
-            ))
-        ) : (
-            <div>購入リストは空です。</div>
-        );
+            );
+        })
     };
 
     // ポップアップウィンドウの表示内容
@@ -165,23 +234,79 @@ const OutputArea: React.FC<OutputAreaProps> = ({ productid, resetInput }) => {
     return (
         <div>
             <div className="px-5 py-5 mx-auto max-w-md">
-                <div className="flex flex-col gap-4">
-                    <ProductInfo product={product} productid={productid} />
-                    <button
-                        className="px-5 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none focus:ring"
-                        onClick={handleAdd} 
-                    >
-                        追加
-                    </button>
-                    <div className="flex justify-center items-center my-2">
+                <div className="flex flex-col gap-2">
+                <div className="w-full h-10 p-2 border border-gray-300 rounded text-center">
+                        <div className="flex justify-center">
+                            {product ? (
+                                <div>{product.NAME}</div>
+                            ) : (
+                                <div>商品名</div>
+                            )}
+                        </div>
+                    </div>
+                    <div className="flex">
+                        <div className="w-1/2 w-full h-10 p-2 border border-gray-300 rounded text-center mr-1">
+                            <div className="flex justify-center">
+                                {product ? (
+                                    <div>{product.PRICE}円</div>
+                                ) : (
+                                    <div>単価</div>
+                                )}
+                            </div>
+                        </div>
+                        <div className="w-1/2 w-full h-10 p-2 border border-gray-300 rounded text-center ml-1">
+                            {product ? (
+                                <div className="flex justify-center">
+                                    <input 
+                                        type="number"
+                                        min="1"
+                                        max="99"
+                                        value={newQuantity}
+                                        onChange={handleQuantityInputChange}
+                                        className="ml-2 w-1/4 text-center"
+                                        defaultValue={list.filter(item => item.NAME === product.NAME).length}
+                                    />
+                                    <div>個</div>
+                                </div>
+                            ) : (
+                                <div>数量</div>
+                            )}
+                        </div>
+                    </div>
+                    <div className="flex">
+                        <button
+                            className="w-1/2 px-5 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none focus:ring mr-1"
+                            onClick={handleDeleteList} 
+                        >
+                            リスト削除
+                        </button>
+                        <button
+                            className="w-1/2 px-5 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none focus:ring ml-1"
+                            onClick={handleQuantityChange}
+                        >
+                            数量変更
+                        </button>
+                    </div>
+                    <div className="flex justify-center items-center mt-4">
                         <h1 className="text-1xl font-bold">購入リスト</h1>
                     </div>
-                    <div className="w-full border border-gray-300 p-5 mx-auto max-w-md">
+                    <div className="w-full border border-gray-300 rounded p-5 mx-auto max-w-md">
                         <div className="text-left py-2">
                             {renderProductList()}
                         </div>
                     </div>
                     <ErrorMessage error={error} />
+                    <div className="w-full p-3 mx-auto max-w-md">
+                        <div className="flex">
+                            <div className="text-left py-2 mx-4 max-w-xs">
+                                合計
+                            </div>
+                            <div className="border border-gray-300 rounded text-left py-2 flex-grow  text-center">
+                            {calculateTotalPrice()} （税抜 {Math.round(calculateTotalPrice() / 1.10)}）円
+                            </div>
+                        </div>
+
+                    </div>
                     <button
                         type="button"
                         className="px-5 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none focus:ring"

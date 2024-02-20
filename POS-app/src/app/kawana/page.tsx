@@ -28,7 +28,7 @@ export default function Home() {
       <h1 className="text-4xl font-bold">{message}</h1>
     </div>
     <InputAria onProductChange={handleProductChange} productid={productid} resetInput={resetInput} />
-    <OutputAria productid={productid} resetInput={resetInput} /> {/* resetInput関数をProductVerificationに渡す */}
+    <OutputAria productid={productid} resetInput={resetInput}/> {/* resetInput関数をProductVerificationに渡す */}
     </>
   );
 }

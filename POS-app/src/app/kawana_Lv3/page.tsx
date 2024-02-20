@@ -28,7 +28,7 @@ export default function Home() {
       <h1 className="text-4xl font-bold">{message}</h1>
     </div>
     <InputArea onProductChange={handleProductChange} productid={productid} resetInput={resetInput} />
-    <OutputArea productid={productid} resetInput={resetInput} /> {/* resetInput関数をProductVerificationに渡す */}
+    <OutputArea productid={productid} resetInput={resetInput} setProductid={setProductid} /> {/* resetInput関数をProductVerificationに渡す */}
     </>
   );
 }
