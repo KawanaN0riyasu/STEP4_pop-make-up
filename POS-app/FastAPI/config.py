@@ -1,0 +1,6 @@
+MYSQL_SERVER="localhost"
+MYSQL_USER="root"
+MYSQL_PASSWORD="gcsyixx7"
+MYSQL_DB="pop-make-up"
+PRODUCT_TABLE="products"
+Transaction_TABLE="transactions"

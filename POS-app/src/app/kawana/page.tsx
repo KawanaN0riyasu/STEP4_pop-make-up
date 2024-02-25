@@ -1,7 +1,7 @@
 'use client'
 import React, { useState } from 'react';
 import TitleBar from '../components/TitleBar';
-import InputAria from '../components/InputAria_kawana';
+import InputAria from '../components/InputArea_kawana';
 import OutputAria from '../components/OutputAria_kawana';
 import { IDtype } from '../type';
 
