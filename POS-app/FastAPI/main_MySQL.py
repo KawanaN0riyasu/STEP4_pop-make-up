@@ -1,22 +1,20 @@
 from fastapi import FastAPI, HTTPException, Body, Depends
 from starlette.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from sqlalchemy.orm import Session, sessionmaker, scoped_session
-import pymysql
-import os
+from sqlalchemy import create_engine, Column, Integer, String, DateTime
+from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.ext.declarative import declarative_base
 from datetime import datetime
-#from dotenv import load_dotenv
 from typing import List
-import logging # loggingモジュール
-import config # configモジュール
-#import aiomysql # aiomysqlモジュール
-import sqlite3
+import logging 
+import config 
 
 app = FastAPI()
 
 # 通信許可するドメインリスト
 origins = [
     "http://localhost:3000",
+    "http://127.0.0.1:8000",
     "http://localhost:3000/kawana",
     "http://localhost:3000/kawana_Lv3",
     "*",
@@ -31,34 +29,39 @@ app.add_middleware(
     allow_headers=["*"]       # 許可するHTTPヘッダーリスト  ["*"]と指定することですべてのHTTPヘッダーを許可
 )
 
-# .envファイルを読み込む
-#load_dotenv()
-
 # ロガーのインスタンスを作成する
 logger = logging.getLogger(__name__)
 
 # データベースへの接続を取得
 def get_db_connection():
-    # データベースの設定
-    MYSQL_SERVER = config.MYSQL_SERVER
-    MYSQL_USER = config.MYSQL_USER
-    MYSQL_PASSWORD = config.MYSQL_PASSWORD
-    MYSQL_DB = config.MYSQL_DB
+    # MySQL設定(Azure)
+    #MYSQL_SERVER = config.MYSQL_SERVER_ONASURE
+    #MYSQL_USER = config.MYSQL_USER_ONASURE
+    #MYSQL_PASSWORD = config.MYSQL_PASSWORD_ONASURE
+    #MYSQL_DB = config.MYSQL_DB_ONASURE
+
+    # MySQL設定(Local)
+    #MYSQL_SERVER = config.MYSQL_SERVER
+    #MYSQL_USER = config.MYSQL_USER
+    #MYSQL_PASSWORD = config.MYSQL_PASSWORD
+    #MYSQL_DB = config.MYSQL_DB
+
+    # SSLの設定
+    SSL_CONFIG = config.MYSQL_SSL_CONFIG 
+
     # データベースに接続する
-    db = pymysql.connect(
-        host=MYSQL_SERVER, user=MYSQL_USER, password=MYSQL_PASSWORD, db=MYSQL_DB
-    )
+    #engine = create_engine(f"mysql+pymysql://{MYSQL_USER}:{MYSQL_PASSWORD}@{MYSQL_SERVER}/{MYSQL_DB}?ssl_ca={SSL_CONFIG}", echo=True)
+
     # SQLiteの場合
-    #DB_FILE = "SQLite_DB.db"
-    #db = sqlite3.connect(DB_FILE)
+    DB_FILE = "SQLite_DB.db"
+    engine =  create_engine(f"sqlite:///{DB_FILE}", echo=True)
+
+    # Sessionオブジェクトを作成する
+    session = sessionmaker(bind=engine)()
+
     # 接続を返す
-    return db
+    return session
 
-# データベースのセッションを作成する
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=get_db_connection())
-
-# データベースのセッションをスコープによって管理する
-db_session = scoped_session(SessionLocal)
 
 class ProductQuery(BaseModel):
     code: str
@@ -77,6 +80,18 @@ class TransactionStatementData(BaseModel):
     PRD_PRICE: int
     TAC_CD: str
 
+# データベースのテーブルを定義する
+Base = declarative_base()
+
+class Product(Base):
+    __tablename__ = "PRODUCTS"
+    PRD_ID = Column(Integer, primary_key=True, index=True)
+    PRD_CODE = Column(String(13), index=True)
+    FROM_DATE = Column(DateTime, index=True)
+    TO_DATE = Column(DateTime, index=True)
+    NAME = Column(String(50), index=True)
+    PRICE = Column(Integer, index=True)
+
 
 @app.get("/")
 def read_root():
@@ -87,25 +102,17 @@ def read_root():
 @app.post("/ProductVerification/")
 async def search_product(
     product_query: ProductQuery = Body(...), 
-    connection: pymysql.connections.Connection = Depends(get_db_connection),
+    connection: Session = Depends(get_db_connection),
 ):
     # 商品コードを取得
     code = product_query.code
 
     try:
         # with文を使って、データベースへの接続を自動的に閉じるようにする
-        with connection.cursor() as cursor:
+        with connection as session:
 
-            # テーブル名を環境変数から取得する
-            PRODUCT_TABLE = os.getenv("PRODUCT_TABLE")
-
-            # 商品コードを検索するためのSQL文を作成
-            sql = f"SELECT PRD_ID, PRD_CODE, NAME, PRICE FROM {PRODUCT_TABLE} WHERE PRD_CODE = %s"
-
-            # SQL文を実行する
-            cursor.execute(sql, tuple([code]))
-            # 検索結果のレコードを辞書として取得
-            result = cursor.fetchone()
+            # 商品コードを検索するためのSQLAlchemyのクエリを作成
+            result = session.query(Product).filter_by(PRD_CODE=code).first()
 
             # 検索結果があれば
             if result:
@@ -114,21 +121,27 @@ async def search_product(
                 return {
                     "status": "success",
                     "message": {
-                        "PRD_ID": result["PRD_ID"],
-                        "PRD_CODE": result["PRD_CODE"],
-                        "NAME": result["NAME"],
-                        "PRICE": result["PRICE"],
+                        "PRD_ID": result.PRD_ID,
+                        "PRD_CODE": result.PRD_CODE,
+                        "NAME": result.NAME,
+                        "PRICE": result.PRICE,
                     },
                 }
             # 検索結果がなければ
             else:
                 # HTTPExceptionを発生させて、ステータスコードを404にし、詳細を"Product not found"にする
                 raise HTTPException(status_code=404, detail="Product not found")
+
     # 例外が発生した場合
     except Exception as e:
-        # HTTPExceptionを発生させて、ステータスコードを500にし、詳細をエラーにする
-        raise HTTPException(status_code=500, detail=f"Error processing data: {e}")
-
+        # ログにエラーを出力
+        logger.error(f"A transactionData error occurred: {e}", exc_info=True)
+        # tracebackモジュールをインポート
+        import traceback
+        # エラーのスタックトレースを文字列に変換
+        error_trace = traceback.format_exc()
+        # HTTPExceptionを発生させて、ステータスコードを500にし、詳細をエラーとスタックトレースにする
+        raise HTTPException(status_code=500, detail=f"Error processing data: {e}\n{error_trace}")
 
 # /transactionData/にPOSTリクエストを送るとTransactionData型のデータを受け取ってDBに保存
 @app.post("/transactionData/")
@@ -161,9 +174,13 @@ async def create_transactionData(
     # 例外が発生した場合
     except Exception as e:
         # ログにエラーを出力
-        logger.error(f"A transactionData error occurred: {e}")
-        # HTTPExceptionを発生させて、ステータスコードを500にし、詳細をエラーにする
-        raise HTTPException(status_code=500, detail=f"Error processing data: {e}")
+        logger.error(f"A transactionData error occurred: {e}", exc_info=True)
+        # tracebackモジュールをインポート
+        import traceback
+        # エラーのスタックトレースを文字列に変換
+        error_trace = traceback.format_exc()
+        # HTTPExceptionを発生させて、ステータスコードを500にし、詳細をエラーとスタックトレースにする
+        raise HTTPException(status_code=500, detail=f"Error processing data: {e}\n{error_trace}")
 
 
 # /transactionStatementData/というエンドポイントにPOSTリクエストを送ると、取引明細データのリストを受け取って、データベースに保存
@@ -210,6 +227,10 @@ async def create_transactionStatementData(
     # 例外が発生した場合
     except Exception as e:
         # ログにエラーを出力
-        logger.error(f"A transactionStatementData error occurred: {e}")
-        # HTTPExceptionを発生させて、ステータスコードを500にし、詳細をエラーにする
-        raise HTTPException(status_code=500, detail=f"Error processing data: {e}")
+        logger.error(f"A transactionData error occurred: {e}", exc_info=True)
+        # tracebackモジュールをインポート
+        import traceback
+        # エラーのスタックトレースを文字列に変換
+        error_trace = traceback.format_exc()
+        # HTTPExceptionを発生させて、ステータスコードを500にし、詳細をエラーとスタックトレースにする
+        raise HTTPException(status_code=500, detail=f"Error processing data: {e}\n{error_trace}")
