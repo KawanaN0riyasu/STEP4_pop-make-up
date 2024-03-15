@@ -13,8 +13,8 @@ const TitleBar = () => {
         
         {/* 中央のタイトル */}
         <div className="flex-1" style={{ flex: 2, display: 'flex', justifyContent: 'center' }}> {/* 50% width */}
-        <h1 className="text-black text-3xl font-bold">
-            Tech0 STEP4 POSアプリ
+        <h1 className="text-black text-1xl font-bold">
+            Pop-make-up
         </h1>
         </div>
     
