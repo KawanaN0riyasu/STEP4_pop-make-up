@@ -34,8 +34,14 @@ def get_products(db: Session, skip: int = 0, limit: int = 100):
 def get_product_by_code(db: Session, code: str):
     return db.query(models.Product).filter(models.Product.PRD_CODE == code).first()
 
+# 在庫情報を取得する
 def get_all_stocks(db: Session):
     return db.query(models.ProductStocks).all()
 
+# codeと一致する商品情報を取得する
 def get_product_by_id(db: Session, code: str):
     return db.query(models.Product).filter(models.Product.PRD_CODE == code).first()
+
+# 予約情報を取得する
+def get_all_reservation_products(db: Session, user_id: str):
+    return db.query(models.ReservationData).filter(models.ReservationData.USER_ID == user_id).all()

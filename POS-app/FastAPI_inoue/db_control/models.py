@@ -1,6 +1,6 @@
 # モデル作成
 # sqlalchemyから必要なモジュールをインポート
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime, Numeric
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime, Numeric, Float
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 
@@ -38,10 +38,12 @@ class Product(Base):
     PRD_ID = Column(Integer, primary_key=True, index=True)
     PRD_CODE = Column(String(13), index=True)
     PRD_IMAGE = Column(String, index=True, nullable=True)
-    FROM_DATE = Column(DateTime, index=True, nullable=True)
-    TO_DATE = Column(DateTime, index=True, nullable=True)
     NAME = Column(String(50), index=True)
+    DESCRIPTION = Column(String, index=True, nullable=True)
     PRICE = Column(Integer, index=True)
+    CAL = Column(Float, index=True)
+    SALINITY = Column(Float, index=True)
+    ALLERGY = Column(Integer, ForeignKey('allergies.ID'), index=True, nullable=True)
 
     PRM = relationship("PromotionalPlan", back_populates="PRD")
     TRST = relationship("TransactionStatement", back_populates="PRD2")
@@ -115,16 +117,13 @@ class ProductStocks(Base):
 
 # ReservationDataモデルの定義
 class ReservationData(Base):
-    __tablename__ = "Reservations"
+    __tablename__ = "reservations"
 
-    ID = Column(Integer, primary_key=True, index=True)
+    ID = Column(Integer, primary_key=True, index=True, autoincrement=True, unique=True)
     RSV_TIME = Column(DateTime, index=True)
     PRD_ID = Column(String(13), ForeignKey('products.PRD_CODE'), index=True)
     USER_ID = Column(String(13), ForeignKey('users.USER_ID'), index=True)
     PRM_ID = Column(String(13), ForeignKey('promotions.PRM_CODE'), index=True)
-    PRICE = Column(Integer, index=True)
-    #カロリー
-    CAL = Column(Integer, index=True)
     #購入方法
     MET = Column(Integer, index=True)
 
