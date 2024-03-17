@@ -58,20 +58,19 @@ class Products(BaseModel):
     PRD_ID: int
     PRD_CODE: str
     PRD_IMAGE: Optional[str]
-    FROM_DATE: Optional[datetime]
-    TO_DATE: Optional[datetime]
     NAME: str
+    DESCRIPTION: Optional[str]
     PRICE: int
+    #カロリー
+    CAL: float
+    SALINITY: float
+    ALLERGY: Optional[int]
 
 class ReservationData(BaseModel):
-    ID: int
     RSV_TIME: datetime
     PRD_ID: str
     USER_ID: str
     PRM_ID: str
-    PRICE: int
-    #カロリー
-    CAL: int
     #購入方法
     MET: int
 
@@ -127,26 +126,50 @@ async def stock_product(db: Session = Depends(get_db)):
 async def create_ReservationData(postReservationData: ReservationData = Body(...), db: Session = Depends(get_db)):
     print(f"Received ReservationData: {postReservationData}")
     try:
-        trd = models.ReservationData(
-            ID = postReservationData.ID, 
+        RSV = models.ReservationData(
             RSV_TIME = postReservationData.RSV_TIME, 
             PRD_ID = postReservationData.PRD_ID, 
             USER_ID = postReservationData.USER_ID, 
             PRM_ID = postReservationData.PRM_ID,
-            PRICE = postReservationData.PRICE,
-            CAL = postReservationData.CAL,
             MET = postReservationData.MET,
         )
-        db.add(trd)
+        db.add(RSV)
         db.commit()
-        # 自動採番されたTRD_IDを取得
-        trd_id = trd.TRD_ID
-        # TRD_IDをレスポンスに含める
-        return {"TRD_ID": trd_id }
+        # 自動採番されたRSV.IDを取得
+        rsv_id = RSV.ID
+        # RSV.IDをレスポンスに含める
+        return {"RSV_ID": rsv_id }
 
     except Exception as e:
         logger.error(f"A transactionData error occurred: {e}")
         raise HTTPException(status_code=500, detail=f"Error processing data: {e}")
+    
+
+# 予約リストを表示する（=01_YoyakuListを開いた時）
+@app.get("/Reservation/", response_model=List[Products])
+# パスパラメータとしてuser_idを取得する
+async def reservation_product(user_id: str, db: Session = Depends(get_db)):
+    reservations = crud.get_all_reservation_products(db, user_id)
+    #return reservations
+
+    # 予約リストから PRD_ID を取得
+    prd_ids = [reservation.PRD_ID for reservation in reservations]
+    print(prd_ids)
+
+    # PRD_ID に対応する製品レコードをデータベースから取得
+    products = []
+    for prd_id in prd_ids:
+        product = crud.get_product_by_id(db, prd_id)
+        # print(product)
+        if product:
+            products.append(product)
+        else:
+            # 製品が見つからなかった場合はエラーを発生させるか、無視します
+            # ここではエラーを発生させる例を示します
+            raise HTTPException(status_code=404, detail=f"Product with PRD_ID {prd_id} not found")
+    return products
+
+
 
 
 # 商品コードを直接入力
