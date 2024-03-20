@@ -19,3 +19,21 @@ export type Producttype = {
     PRD_PRICE: number;
     TAC_CD: string;
   };
+
+  export type Stock = {
+    ID: number;
+    PRD_CODE: string;
+    PRD_NAME: string;
+    PRD_IMAGE: string;
+    DESCRIPTION: string;
+    PRICE?: number; // オプショナルなプロパティ
+    CAL?: number; // オプショナルなプロパティ
+    SALINITY?: number; 
+    ALLERGY_ID?: number;
+    PRD_ID: string;
+    STORE_ID: string;
+    DATE_ID: string;
+    LOT?: string;
+    BEST_BY_DAY?: string; // オプショナルなプロパティ
+    PIECES?: number; // オプショナルなプロパティ
+  };

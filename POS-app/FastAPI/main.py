@@ -1,35 +1,21 @@
-from fastapi import FastAPI, HTTPException, Body, Depends
+from fastapi import FastAPI, HTTPException, Depends
 from starlette.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-import logging
-from sqlalchemy import desc
-from sqlalchemy.orm import Session, joinedload
-from db_control import crud, models, schemas
-from database import SessionLocal, engine, get_db
-import pymysql
-import os
-from datetime import datetime
-from dotenv import load_dotenv
-from typing import List
-
-models.Base.metadata.create_all(bind=engine)
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-
-# コンソールハンドラを追加
-console_handler = logging.StreamHandler()
-console_handler.setLevel(logging.DEBUG)
-
-# ロガーにハンドラを追加
-logger.handlers.clear()
-logger.addHandler(console_handler)
+from sqlalchemy import create_engine, Column, Integer, String, Float, DATE
+from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.ext.declarative import declarative_base
+import logging 
+import config 
+import traceback
 
 app = FastAPI()
 
 # 通信許可するドメインリスト
 origins = [
     "http://localhost:3000",
+    "http://127.0.0.1:8000",
     "http://localhost:3000/kawana",
+    "http://localhost:3000/kawana_Lv3",
+    "http://localhost:3000/02_MenuList",
     "*",
 ]
 
@@ -42,84 +28,102 @@ app.add_middleware(
     allow_headers=["*"]       # 許可するHTTPヘッダーリスト  ["*"]と指定することですべてのHTTPヘッダーを許可
 )
 
-# .envファイルを読み込む
-load_dotenv()
+# ロガーのインスタンスを作成する
+logger = logging.getLogger(__name__)
 
-class ProductQuery(BaseModel):
-    code: str
+# MySQL設定(Azure)
+#MYSQL_SERVER = config.MYSQL_SERVER_ONASURE
+#MYSQL_USER = config.MYSQL_USER_ONASURE
+#MYSQL_PASSWORD = config.MYSQL_PASSWORD_ONASURE
+#MYSQL_DB = config.MYSQL_DB_ONASURE
 
-class TransactionData(BaseModel):
-    DATETIME: datetime
-    EMP_CD: str
-    STORE_CD: str
-    POS_NO: str
-    TOTAL_AMT: int
-    TOTAL_AMT_EX_TAX: int
+# MySQL設定(Local)
+#MYSQL_SERVER = config.MYSQL_SERVER
+#MYSQL_USER = config.MYSQL_USER
+#MYSQL_PASSWORD = config.MYSQL_PASSWORD
+#MYSQL_DB = config.MYSQL_DB
 
-class TransactionStatementData(BaseModel):
-    TRD_ID: int
-    PRD_NAME: str
-    PRD_PRICE: int
-    TAC_CD: str
+# SSLの設定
+SSL_CONFIG = config.MYSQL_SSL_CONFIG 
+
+# データベースに接続する
+#engine = create_engine(f"mysql+pymysql://{MYSQL_USER}:{MYSQL_PASSWORD}@{MYSQL_SERVER}/{MYSQL_DB}?ssl_ca={SSL_CONFIG}", echo=True)
+
+# SQLiteの場合
+DB_FILE = "pop-make-up_DB.db"
+engine =  create_engine(f"sqlite:///{DB_FILE}", echo=True)
+
+# Sessionオブジェクトを作成する
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+# データベースのテーブルを定義する
+Base = declarative_base()
+
+class Product(Base):
+    __tablename__ = 'products'
+    ID = Column(Integer, primary_key=True, index=True)
+    PRD_CODE = Column(String)
+    PRD_NAME = Column(String)
+    PRD_IMAGE = Column(String)
+    DESCRIPTION = Column(String)
+    PRICE = Column(Integer)
+    CAL = Column(Float)
+    SALINITY = Column(Float)
+    ALLERGY_ID = Column(Integer)
+
+class Stock(Base):
+    __tablename__ = 'stocks'
+    ID = Column(Integer, primary_key=True, index=True)
+    PRD_ID = Column(Integer)
+    STORE_ID = Column(Integer)
+    DATE_ID = Column(Integer)
+    LOT = Column(DATE)
+    BEST_BY_DAY = Column(DATE)
+    PIECES = Column(Integer)
+
+# データベーステーブルを作成
+Base.metadata.create_all(bind=engine)
+
+# SQLAlchemyのモデルインスタンスを辞書に変換するヘルパー関数
+def to_dict(row):
+    return {column.name: getattr(row, column.name) for column in row.__table__.columns}
+
+# データベース接続を取得する依存関係
+def get_db_connection():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 @app.get("/")
 def read_root():
     return {"Hello": "World"}
 
-@app.post("/ProductVerification/")
-async def search_product(product_query: ProductQuery = Body(...), db: Session = Depends(get_db)):
-    print(f"Received code: {product_query.code}")
-    product = crud.get_product_by_code(db, product_query.code)
-    if product:
-        return {
-            "status": "success",
-            "message": product
-        }
-    else:
-        return {"status": "failed", "message": None}
-
-@app.post("/transactionData/")
-async def create_transactionData(postTransactionData: TransactionData = Body(...), db: Session = Depends(get_db)):
-    print(f"Received transactionData: {postTransactionData}")
+# /Stock/というエンドポイントにPOSTリクエストを送るとデータベースから在庫情報リストを取得
+@app.post("/Stock/")
+async def get_product(db: Session = Depends(get_db_connection)):
     try:
-        trd = models.Transaction(
-            DATETIME = postTransactionData.DATETIME, 
-            EMP_CD = postTransactionData.EMP_CD, 
-            STORE_CD = postTransactionData.STORE_CD, 
-            POS_NO = postTransactionData.POS_NO, 
-            TOTAL_AMT = postTransactionData.TOTAL_AMT,
-            TOTAL_AMT_EX_TAX = postTransactionData.TOTAL_AMT_EX_TAX,
-        )
-        db.add(trd)
-        db.commit()
-        # 自動採番されたTRD_IDを取得
-        trd_id = trd.TRD_ID
-        # TRD_IDをレスポンスに含める
-        return {"TRD_ID": trd_id }
+        stocks_result = db.query(Stock).all()
+        if stocks_result:
+            combined_data = []
+            for stock in stocks_result:
+                product_data = db.query(Product).filter(Product.ID == stock.PRD_ID).first()
+                stock_dict = to_dict(stock)
+                product_dict = to_dict(product_data)
+                combined_dict = {**product_dict, **stock_dict}  # 2つの辞書を結合
+                combined_data.append(combined_dict)
+            return {"status": "success", "data": combined_data}
 
+        else:
+            # HTTPExceptionを発生させて、ステータスコードを404にし、詳細を"Product not found"にする
+            raise HTTPException(status_code=404, detail="Product not found")
+            
+    # 例外が発生した場合
     except Exception as e:
-        logger.error(f"A transactionData error occurred: {e}")
-        raise HTTPException(status_code=500, detail=f"Error processing data: {e}")
-
-@app.post("/transactionStatementData/")
-async def create_transactionStatementData(postTransactionStatements: List[TransactionStatementData] = Body(...), db: Session = Depends(get_db)):
-    print(f"Received transactionStatementData: {postTransactionStatements}")
-    try:
-        list_TransactionStatement = []
-        for postTransactionStatement in postTransactionStatements:
-            transactionStatement = models.TransactionStatement(
-                TRD_ID = postTransactionStatement.TRD_ID, 
-                PRD_NAME = postTransactionStatement.PRD_NAME, 
-                PRD_PRICE = postTransactionStatement.PRD_PRICE,
-                TAC_CD = postTransactionStatement.TAC_CD,
-            )
-            db.add(transactionStatement)
-            list_TransactionStatement.append(transactionStatement)
-        db.commit()
-        for transactionStatement in list_TransactionStatement:
-            db.refresh(transactionStatement)
-        return list_TransactionStatement
-    
-    except Exception as e:
-        logger.error(f"A transactionStatementData error occurred: {e}")
-        raise HTTPException(status_code=500, detail=f"Error processing data: {e}")
+        # ログにエラーを出力
+        logger.error(f"A transactionData error occurred: {e}", exc_info=True)
+        # エラーのスタックトレースを文字列に変換
+        error_trace = traceback.format_exc()
+        # HTTPExceptionを発生させて、ステータスコードを500にし、詳細をエラーとスタックトレースにする
+        raise HTTPException(status_code=500, detail=f"Error processing data: {e}\n{error_trace}")
